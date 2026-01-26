@@ -1,87 +1,59 @@
-# Welcome to React Router!
-
-A modern, production-ready template for building full-stack React applications using React Router.
-
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
-
-## Features
-
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
-
-## Getting Started
-
-### Installation
-
-Install the dependencies:
-
-```bash
-npm install
-```
-
-### Development
-
-Start the development server with HMR:
-
-```bash
-npm run dev
-```
-
-Your application will be available at `http://localhost:5173`.
-
-## Building for Production
-
-Create a production build:
-
-```bash
-npm run build
-```
-
-## Deployment
-
-### Docker Deployment
-
-To build and run using Docker:
-
-```bash
-docker build -t my-app .
-
-# Run the container
-docker run -p 3000:3000 my-app
-```
-
-The containerized application can be deployed to any platform that supports Docker, including:
-
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
-
-### DIY Deployment
-
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
-
-```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
-```
-
-## Styling
-
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
+<div align="center">
+  <img src="public/logo.svg" width="100" height="100" alt="RUSH IELTS Logo" />
+  <h1>RUSH IELTS</h1>
+  <p><strong>A simple, self-managed vocabulary tool.</strong></p>
+  
+  <p>
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">
+      <img src="https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg" alt="License" />
+    </a>
+    <img src="https://img.shields.io/badge/PWA-Ready-blue" alt="PWA" />
+  </p>
+</div>
 
 ---
 
-Built with ❤️ using React Router.
+## 💡 Motivation
+
+**Simple problem:** I encounter a huge volume of new words daily (from dictation, reading, etc.), and I forget them just as fast.
+
+Most vocabulary apps are too rigid or come with pre-set word lists that don't match my needs. I wanted a tool that allows me to **completely manage my own data** and control my own study progress.
+
+**RUSH IELTS** is built for **high-frequency usage in fragmented time**. It's not about gamification or fancy algorithms; it's about quickly importing *my* words, reviewing them, and killing off the ones I don't know.
+
+## ✨ Key Features
+
+- **Full Control:** You decide what to learn. Import your own words via text or file.
+- **Smart Import:** Automatically fetches definitions, phonetics, and examples (API-assisted).
+- **Efficient Review:**
+  - **Recognition Mode:** Quick flashcard style with audio.
+  - **Spelling Mode:** Test your output skills.
+- **Mistake Focused:** Words you miss are automatically tracked. You can focus specifically on clearing your "Mistake List".
+- **Local & Offline:** No login required. All data stays in your browser (IndexedDB). Installable as a PWA on your phone.
+
+## 🚀 Getting Started
+
+1. **Clone the repo**
+   ```bash
+   git clone https://github.com/peixin/rush-ielts.git
+   ```
+
+2. **Install & Run**
+   ```bash
+   pnpm install
+   pnpm run dev
+   ```
+
+3. **Build**
+   ```bash
+   pnpm run build
+   pnpm start
+   ```
+
+## 🛡️ License
+
+Copyright © 2026 [Percival](mailto:fengyi.mail@gmail.com).
+
+This project is licensed under **CC BY-NC-SA 4.0**.
+*   **Free for personal use.**
+*   **Commercial use is strictly prohibited.**

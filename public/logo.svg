@@ -1,0 +1,19 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" fill="#2563EB"/>
+  
+  <!-- Bow Body -->
+  <path d="M256 256C256 256 128 512 256 768" stroke="white" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Bow String -->
+  <path d="M256 256L256 768" stroke="white" stroke-width="16" stroke-dasharray="24 24" stroke-opacity="0.6"/>
+  
+  <!-- Arrow Shaft -->
+  <path d="M160 512L850 512" stroke="white" stroke-width="32" stroke-linecap="round"/>
+  
+  <!-- Arrow Head -->
+  <path d="M750 412L850 512L750 612" stroke="white" stroke-width="32" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Arrow Fletching -->
+  <path d="M220 512L160 452" stroke="white" stroke-width="24" stroke-linecap="round"/>
+  <path d="M220 512L160 572" stroke="white" stroke-width="24" stroke-linecap="round"/>
+</svg>

@@ -252,3 +252,4 @@ $RECYCLE.BIN/
 # React Router
 /.react-router/
 /build/
+public/config.json
