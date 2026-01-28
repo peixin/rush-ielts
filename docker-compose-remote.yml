@@ -1,0 +1,21 @@
+services:
+  app:
+    # Use the Aliyun registry image
+    image: ${ALIYUN_REGISTRY}/${ALIYUN_NAMESPACE}/rush-ielts:${TAG:-latest}
+    restart: always
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      # Mount the cert directory
+      - ./nginx/cert:/etc/nginx/cert
+    restart: always
+    depends_on:
+      - app
