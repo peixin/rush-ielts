@@ -2,7 +2,7 @@
   "name": "rush-ielts",
   "private": true,
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "A simple, self-managed vocabulary tool.",
   "author": "Percival <fengyi.mail@gmail.com>",
   "license": "CC-BY-NC-SA-4.0",

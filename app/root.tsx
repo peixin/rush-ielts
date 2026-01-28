@@ -57,6 +57,20 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta name="theme-color" content="#2563EB" />
+
+        {/* Google tag (gtag.js) */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-G7V9ES6QXW" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-G7V9ES6QXW');
+            `,
+          }}
+        />
+
         <Meta />
         <Links />
       </head>
@@ -68,11 +82,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <footer className="py-6 text-center text-gray-400 text-sm border-t border-gray-100 dark:border-gray-800">
             <p className="font-semibold text-gray-500 dark:text-gray-400">{config.productName} <span className="text-xs font-normal opacity-70">{config.version}</span></p>
             <p className="mt-1">
-              Created by <span className="font-medium text-gray-600 dark:text-gray-300">{config.author}</span>
+              Created by <a href={`mailto:${config.email}`} className="font-medium text-gray-600 dark:text-gray-300">{config.author}</a>
             </p>
-            <a href={`mailto:${config.email}`} className="mt-1 inline-block hover:text-blue-500 transition-colors">
-              {config.email}
-            </a>
           </footer>
         </div>
         <ScrollRestoration />

@@ -6,5 +6,6 @@ export default [
   route("settings", "routes/settings.tsx"),
   route("import", "routes/import.tsx"),
   route("vocabulary", "routes/vocabulary.tsx"),
+  route("collections", "routes/collections.tsx"),
   route("api/dict", "routes/api.dict.ts"),
 ] satisfies RouteConfig;

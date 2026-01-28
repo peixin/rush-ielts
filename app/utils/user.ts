@@ -5,6 +5,7 @@ export interface UserSettings {
   // Display Preferences
   showDefinition?: boolean;
   showPhonetic?: boolean;
+  reviewMode?: 'recognition' | 'spelling'; // New field
   // Progress
   lastStudiedWordId?: number;
 }

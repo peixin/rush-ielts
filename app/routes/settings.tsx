@@ -31,7 +31,7 @@ export default function Settings() {
     setSaved(true);
     // Redirect to home after save
     setTimeout(() => {
-        navigate("/");
+      navigate("/");
     }, 500);
   };
 
@@ -54,7 +54,7 @@ export default function Settings() {
         {/* User Profile Section */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
           <div className="p-4 border-b border-gray-100 dark:border-gray-700">
-             <h3 className="font-semibold text-gray-900 dark:text-white">User Profile</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white">User Profile</h3>
           </div>
           <form onSubmit={handleSubmit} className="p-4 space-y-4">
             <div>
@@ -71,7 +71,7 @@ export default function Settings() {
                 placeholder="Your Name"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Exam Date (Optional)
@@ -108,36 +108,76 @@ export default function Settings() {
 
             {/* Display Preferences */}
             <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
-               <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Vocabulary List Display</h4>
-               <div className="space-y-3">
-                 <label className="flex items-center gap-3 cursor-pointer">
-                   <input 
-                      type="checkbox"
-                      name="showDefinition"
-                      checked={!!formData.showDefinition}
-                      onChange={(e) => {
-                        setFormData(prev => ({ ...prev, showDefinition: e.target.checked }));
-                        setSaved(false);
-                      }}
-                      className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
-                   />
-                   <span className="text-sm text-gray-700 dark:text-gray-300">Show Definitions by Default</span>
-                 </label>
+              <h4 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">Study Preferences</h4>
 
-                 <label className="flex items-center gap-3 cursor-pointer">
-                   <input 
-                      type="checkbox"
-                      name="showPhonetic"
-                      checked={!!formData.showPhonetic}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Default Review Mode
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className={`cursor-pointer border rounded-xl p-3 flex flex-col items-center gap-2 transition-all ${formData.reviewMode === 'recognition' || !formData.reviewMode ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+                    <input
+                      type="radio"
+                      name="reviewMode"
+                      value="recognition"
+                      checked={formData.reviewMode === 'recognition' || !formData.reviewMode}
                       onChange={(e) => {
-                        setFormData(prev => ({ ...prev, showPhonetic: e.target.checked }));
+                        setFormData(prev => ({ ...prev, reviewMode: 'recognition' }));
                         setSaved(false);
                       }}
-                      className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
-                   />
-                   <span className="text-sm text-gray-700 dark:text-gray-300">Show Phonetics by Default</span>
-                 </label>
-               </div>
+                      className="hidden"
+                    />
+                    <span className="text-2xl">👀</span>
+                    <span className="text-sm font-semibold">Recognition</span>
+                  </label>
+
+                  <label className={`cursor-pointer border rounded-xl p-3 flex flex-col items-center gap-2 transition-all ${formData.reviewMode === 'spelling' ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300' : 'border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
+                    <input
+                      type="radio"
+                      name="reviewMode"
+                      value="spelling"
+                      checked={formData.reviewMode === 'spelling'}
+                      onChange={(e) => {
+                        setFormData(prev => ({ ...prev, reviewMode: 'spelling' }));
+                        setSaved(false);
+                      }}
+                      className="hidden"
+                    />
+                    <span className="text-2xl">✍️</span>
+                    <span className="text-sm font-semibold">Spelling</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="showDefinition"
+                    checked={!!formData.showDefinition}
+                    onChange={(e) => {
+                      setFormData(prev => ({ ...prev, showDefinition: e.target.checked }));
+                      setSaved(false);
+                    }}
+                    className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Show Definitions by Default</span>
+                </label>
+
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    name="showPhonetic"
+                    checked={!!formData.showPhonetic}
+                    onChange={(e) => {
+                      setFormData(prev => ({ ...prev, showPhonetic: e.target.checked }));
+                      setSaved(false);
+                    }}
+                    className="w-5 h-5 rounded text-blue-600 focus:ring-blue-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700"
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">Show Phonetics by Default</span>
+                </label>
+              </div>
             </div>
 
             <button
@@ -152,17 +192,17 @@ export default function Settings() {
         {/* Data Management Section */}
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
           <div className="p-4 border-b border-gray-100 dark:border-gray-700">
-             <h3 className="font-semibold text-gray-900 dark:text-white">Data Management</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white">Data Management</h3>
           </div>
           <div className="p-4 space-y-4">
-            <Link 
+            <Link
               to="/import"
               className="block w-full py-3 px-4 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold rounded-xl text-center hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
             >
               Import Words
             </Link>
 
-            <button 
+            <button
               onClick={handleResetData}
               className="w-full py-3 px-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-semibold rounded-xl text-center hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors"
             >

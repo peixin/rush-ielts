@@ -91,57 +91,50 @@ export default function Home() {
                 <div className="text-4xl mb-2">📚</div>
                 <h3 className="font-bold text-gray-900 dark:text-white">Start Your Journey</h3>
                 <p className="text-sm text-gray-500 dark:text-gray-400">
-                  You haven't added any words yet. Import your vocabulary list to begin studying.
+                  You haven't added any words yet. Create a collection to begin.
                 </p>
               </div>
               <Link
-                to="/import"
+                to="/collections"
                 className="block w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-500/30 transition-all active:scale-95"
               >
-                + Import Words
+                Go to Collections
               </Link>
             </div>
           )}
 
           {totalWords > 0 && (
-            <div className="space-y-2">
-              <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">
-                Study All
-              </h2>
+            <div className="space-y-3">
+              {/* Continue Button (if progress exists) */}
+              {/* Note: We rely on the user to pick a collection now, but we could make a smart 'Continue Last' later. 
+                   For now, the requirement says "Continue / Start Review". 
+                   "Start Review" -> Collections List
+               */}
+
               <Link
-                to="/study?mode=recognition&source=all"
-                className="block w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-center shadow-lg shadow-blue-500/30 transition-all active:scale-95"
+                to="/collections"
+                className="block w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white text-lg font-bold rounded-xl text-center shadow-lg shadow-blue-500/30 transition-all active:scale-95 flex items-center justify-center gap-2"
               >
-                Recognition Mode
+                <span>🚀</span> Start / Continue Review
               </Link>
-              <Link
-                to="/study?mode=spelling&source=all"
-                className="block w-full py-4 px-6 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-white font-semibold rounded-xl text-center border-2 border-gray-200 dark:border-gray-700 transition-all active:scale-95"
-              >
-                Spelling Mode
-              </Link>
+
+              <p className="text-xs text-center text-gray-400">
+                Select a collection to study
+              </p>
             </div>
           )}
 
           {mistakeCount > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-2 mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
               <h2 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider ml-1">
-                Review Mistakes
+                Quick Actions
               </h2>
-              <div className="grid grid-cols-2 gap-3">
-                <Link
-                  to="/study?mode=recognition&source=mistakes"
-                  className="block w-full py-3 px-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-semibold rounded-xl text-center hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors active:scale-95"
-                >
-                  Recognition
-                </Link>
-                <Link
-                  to="/study?mode=spelling&source=mistakes"
-                  className="block w-full py-3 px-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-semibold rounded-xl text-center hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors active:scale-95"
-                >
-                  Spelling
-                </Link>
-              </div>
+              <Link
+                to="/study?source=mistakes"
+                className="block w-full py-3 px-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-semibold rounded-xl text-center hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors active:scale-95 flex items-center justify-center gap-2"
+              >
+                <span>🎯</span> Review All Mistakes
+              </Link>
             </div>
           )}
         </div>
