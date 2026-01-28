@@ -22,7 +22,7 @@ export interface Collection {
 const DB_NAME = 'rush_db';
 const VOCAB_STORE = 'vocabulary';
 const COLLECTIONS_STORE = 'collections';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -34,22 +34,23 @@ function openDB(): Promise<IDBDatabase> {
 
     request.onupgradeneeded = (event) => {
       const db = (event.target as IDBOpenDBRequest).result;
+      const transaction = (event.target as IDBOpenDBRequest).transaction!;
 
-
-      // Create Vocabulary Store if not exists
-      if (!db.objectStoreNames.contains(VOCAB_STORE)) {
-        db.createObjectStore(VOCAB_STORE, { keyPath: 'word' });
-      }
-
-      // Create Collections Store
+      // Create Collections Store if not exists
       if (!db.objectStoreNames.contains(COLLECTIONS_STORE)) {
         const colStore = db.createObjectStore(COLLECTIONS_STORE, { keyPath: 'id', autoIncrement: true });
-        // Create Default Collection
         colStore.add({ name: "Default Collection", createdAt: Date.now() });
       }
 
 
-      // Removed historical data migration logic as per user request.
+      if (!db.objectStoreNames.contains(VOCAB_STORE)) {
+        const vocabStore = db.createObjectStore(VOCAB_STORE, { keyPath: 'id', autoIncrement: true });
+        // Create indexes for querying
+        vocabStore.createIndex('word', 'word', { unique: false });
+        vocabStore.createIndex('collectionId', 'collectionId', { unique: false });
+        // Uniqueness constraint: Word + Collection
+        vocabStore.createIndex('word_collection', ['word', 'collectionId'], { unique: true });
+      }
     };
 
     request.onsuccess = (event) => {
@@ -65,6 +66,7 @@ function openDB(): Promise<IDBDatabase> {
 }
 
 // --- Collection Operations ---
+// (No changes needed for collections generally, but keeping them here)
 
 export async function getCollections(): Promise<Collection[]> {
   const db = await openDB();
@@ -120,14 +122,14 @@ export async function deleteCollection(id: number) {
 
     // 2. Cascade Delete Words in this collection
     const vocabStore = transaction.objectStore(VOCAB_STORE);
-    const cursorRequest = vocabStore.openCursor();
+    // Use index to find words in collection
+    const index = vocabStore.index('collectionId');
+    const request = index.openCursor(IDBKeyRange.only(id));
 
-    cursorRequest.onsuccess = (e: any) => {
+    request.onsuccess = (e: any) => {
       const cursor = e.target.result;
       if (cursor) {
-        if (cursor.value.collectionId === id) {
-          cursor.delete();
-        }
+        cursor.delete();
         cursor.continue();
       }
     };
@@ -145,35 +147,53 @@ export async function addWordToVocab(data: Omit<WordRecord, 'addedAt' | 'mistake
   return new Promise<void>((resolve, reject) => {
     const transaction = db.transaction([VOCAB_STORE], 'readwrite');
     const store = transaction.objectStore(VOCAB_STORE);
+    const index = store.index('word_collection');
 
-    // Check if exists to preserve stats
-    const request = store.get(data.word);
+    // Check uniqueness in collection
+    const checkReq = index.get([data.word, data.collectionId || 1]);
 
-    request.onsuccess = () => {
-      if (request.result) {
-        // Word exists, SKIP (do nothing or updated?)
-        // If we want to allow updating "collectionId" we could do it here, but requirement says import -> choose collection
-        // Let's UPDATE the definition/audio but preserve stats? 
-        // Or just Skip. Let's just resolve.
+    checkReq.onsuccess = () => {
+      if (checkReq.result) {
+        // Exists in this collection, resolve (skip)
         resolve();
         return;
       }
 
-      // New word, assign ID
-      const countReq = store.count();
-      countReq.onsuccess = () => {
-        const count = countReq.result;
-        const record: WordRecord = {
-          ...data,
-          id: count + 1,
-          addedAt: Date.now(),
-          mistakeCount: 0,
-          lastReviewed: 0,
-          mistakeTypes: [],
-          collectionId: data.collectionId || 1 // Fallback to default
-        };
-        store.put(record);
+      // Add new
+      const record: WordRecord = {
+        ...data,
+        addedAt: Date.now(),
+        mistakeCount: 0,
+        lastReviewed: 0,
+        mistakeTypes: [],
+        collectionId: data.collectionId || 1
       };
+      // No manual ID needed, autoIncrement handles it
+      store.add(record);
+    };
+
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
+}
+
+export async function updateWord(id: number, data: Partial<WordRecord>) {
+  const db = await openDB();
+  return new Promise<void>((resolve, reject) => {
+    const transaction = db.transaction([VOCAB_STORE], 'readwrite');
+    const store = transaction.objectStore(VOCAB_STORE);
+
+    const request = store.get(id);
+
+    request.onsuccess = () => {
+      const existingRecord: WordRecord = request.result;
+      if (!existingRecord) {
+        reject(new Error("Word not found"));
+        return;
+      }
+
+      const newRecord = { ...existingRecord, ...data };
+      store.put(newRecord);
     };
 
     transaction.oncomplete = () => resolve();
@@ -186,15 +206,16 @@ export async function getAllWords(collectionId?: number): Promise<WordRecord[]> 
   return new Promise((resolve, reject) => {
     const transaction = db.transaction([VOCAB_STORE], 'readonly');
     const store = transaction.objectStore(VOCAB_STORE);
-    const request = store.getAll();
 
-    request.onsuccess = () => {
-      let results: WordRecord[] = request.result;
-      if (collectionId !== undefined) {
-        results = results.filter(w => w.collectionId === collectionId);
-      }
-      resolve(results);
-    };
+    let request;
+    if (collectionId !== undefined) {
+      const index = store.index('collectionId');
+      request = index.getAll(collectionId);
+    } else {
+      request = store.getAll();
+    }
+
+    request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
 }
@@ -206,12 +227,12 @@ export async function getMistakeWords(collectionId?: number): Promise<WordRecord
 
 // --- Progress Operations ---
 
-export async function recordMistake(word: string, type: 'recognition' | 'spelling') {
+export async function recordMistake(id: number, type: 'recognition' | 'spelling') {
   const db = await openDB();
   return new Promise<void>((resolve, reject) => {
     const transaction = db.transaction([VOCAB_STORE], 'readwrite');
     const store = transaction.objectStore(VOCAB_STORE);
-    const request = store.get(word);
+    const request = store.get(id);
 
     request.onsuccess = () => {
       if (!request.result) return; // Should not happen if word is in vocab
@@ -230,12 +251,12 @@ export async function recordMistake(word: string, type: 'recognition' | 'spellin
   });
 }
 
-export async function clearMistake(word: string) {
+export async function clearMistake(id: number) {
   const db = await openDB();
   return new Promise<void>((resolve, reject) => {
     const transaction = db.transaction([VOCAB_STORE], 'readwrite');
     const store = transaction.objectStore(VOCAB_STORE);
-    const request = store.get(word);
+    const request = store.get(id);
 
     request.onsuccess = () => {
       if (!request.result) return;
@@ -252,13 +273,12 @@ export async function clearMistake(word: string) {
   });
 }
 
-export async function deleteWord(word: string) {
+export async function deleteWord(id: number) {
   const db = await openDB();
   return new Promise<void>((resolve, reject) => {
     const transaction = db.transaction([VOCAB_STORE], 'readwrite');
     const store = transaction.objectStore(VOCAB_STORE);
-    const request = store.delete(word);
-
+    store.delete(id);
     transaction.oncomplete = () => resolve();
     transaction.onerror = () => reject(transaction.error);
   });

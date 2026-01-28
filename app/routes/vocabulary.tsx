@@ -4,6 +4,7 @@ import {
   getAllWords,
   deleteWord,
   addWordToVocab,
+  updateWord,
   getCollections,
   type WordRecord,
   type Collection
@@ -105,9 +106,9 @@ export default function Vocabulary() {
     }
   };
 
-  const handleDelete = async (word: string) => {
-    if (confirm(`Are you sure you want to delete "${word}"?`)) {
-      await deleteWord(word);
+  const handleDelete = async (word: WordRecord) => {
+    if (confirm(`Are you sure you want to delete "${word.word}"?`)) {
+      if (word.id) await deleteWord(word.id);
       await loadWords();
     }
   };
@@ -147,7 +148,12 @@ export default function Vocabulary() {
       collectionId: editingWord.collectionId || activeCollectionId
     };
 
-    await addWordToVocab(wordToSave);
+    if (editingWord.id) {
+       await updateWord(editingWord.id, wordToSave);
+    } else {
+       await addWordToVocab(wordToSave);
+    }
+    
     setIsEditModalOpen(false);
     setEditingWord(null);
     await loadWords();
@@ -384,11 +390,11 @@ export default function Vocabulary() {
                                 </button>
                                 <div className="h-px bg-gray-100 dark:bg-gray-700"></div>
                                 <button
-                                    onClick={(e) => { e.stopPropagation(); setOpenMenuWordId(null); handleDelete(word.word); }}
-                                    className="w-full text-left px-4 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
-                                >
-                                    🗑️ Delete
-                                </button>
+                                     onClick={(e) => { e.stopPropagation(); setOpenMenuWordId(null); handleDelete(word); }}
+                                     className="w-full text-left px-4 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                                  >
+                                     🗑️ Delete
+                                  </button>
                                 </div>
                             </>
                             )}
@@ -615,7 +621,7 @@ export default function Vocabulary() {
                   Edit
                 </button>
                 <button
-                  onClick={() => { if (confirm("Delete word?")) { setIsDetailModalOpen(false); handleDelete(viewingWord.word); } }}
+                  onClick={() => { if (confirm("Delete word?")) { setIsDetailModalOpen(false); handleDelete(viewingWord); } }}
                   className="flex-1 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg font-bold hover:bg-red-100 dark:hover:bg-red-900/30"
                 >
                   Delete

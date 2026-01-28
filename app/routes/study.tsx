@@ -131,12 +131,13 @@ export default function Study() {
   };
 
   const handleRecognition = async (known: boolean) => {
+    if (!currentWord.id) return;
     if (known) {
       if (source === "mistakes") {
-        await clearMistake(currentWord.word);
+        await clearMistake(currentWord.id);
       }
     } else {
-      await recordMistake(currentWord.word, "recognition");
+      await recordMistake(currentWord.id, "recognition");
     }
     handleNext();
   };
@@ -147,15 +148,17 @@ export default function Study() {
 
     const isCorrect = spellingInput.trim().toLowerCase() === currentWord.word.toLowerCase();
 
+    if (!currentWord.id) return;
+
     if (isCorrect) {
       setFeedback("correct");
       if (source === "mistakes") {
-        await clearMistake(currentWord.word);
+        await clearMistake(currentWord.id);
       }
       setTimeout(() => handleNext(), 1000);
     } else {
       setFeedback("incorrect");
-      await recordMistake(currentWord.word, "spelling");
+      await recordMistake(currentWord.id, "spelling");
     }
   };
 
