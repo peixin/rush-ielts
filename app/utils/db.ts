@@ -88,6 +88,28 @@ export async function addCollection(name: string): Promise<number> {
   });
 }
 
+export async function updateCollection(id: number, name: string) {
+  const db = await openDB();
+  return new Promise<void>((resolve, reject) => {
+    const transaction = db.transaction([COLLECTIONS_STORE], 'readwrite');
+    const store = transaction.objectStore(COLLECTIONS_STORE);
+    const request = store.get(id);
+
+    request.onsuccess = () => {
+      const data = request.result;
+      if (!data) {
+        reject(new Error("Collection not found"));
+        return;
+      }
+      data.name = name;
+      const updateRequest = store.put(data);
+      updateRequest.onsuccess = () => resolve();
+      updateRequest.onerror = () => reject(updateRequest.error);
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
 export async function deleteCollection(id: number) {
   const db = await openDB();
   return new Promise<void>((resolve, reject) => {

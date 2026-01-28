@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router";
 import { useEffect, useState } from "react";
-import { getAllWords, getMistakeWords } from "~/utils/db";
+import { getAllWords, getMistakeWords, getCollections } from "~/utils/db";
 import { getUserSettings, hasUserSettings, type UserSettings } from "~/utils/user";
 
 export default function Home() {
@@ -9,6 +9,7 @@ export default function Home() {
   const [totalWords, setTotalWords] = useState<number>(0);
   const [user, setUser] = useState<UserSettings | null>(null);
   const [daysLeft, setDaysLeft] = useState<number | null>(null);
+  const [lastCollectionName, setLastCollectionName] = useState<string | null>(null);
 
   useEffect(() => {
     // Check user settings
@@ -27,6 +28,13 @@ export default function Home() {
       setDaysLeft(diffDays > 0 ? diffDays : 0);
     }
 
+    if (settings?.lastCollectionId) {
+      getCollections().then(cols => {
+        const col = cols.find(c => c.id === settings.lastCollectionId);
+        if (col) setLastCollectionName(col.name);
+      });
+    }
+
     // Load counts from DB
     getAllWords().then(words => setTotalWords(words.length));
     getMistakeWords().then(mistakes => setMistakeCount(mistakes.length));
@@ -35,7 +43,7 @@ export default function Home() {
   if (!user) return null; // Or a loading spinner
 
   return (
-    <div className="flex-grow flex flex-col items-center justify-center p-6 font-sans">
+    <div className="grow flex flex-col items-center justify-center p-6 font-sans">
       <div className="w-full max-w-md space-y-8">
 
         {/* Header / User Info */}
@@ -44,7 +52,7 @@ export default function Home() {
             Hi, {user.name}
           </div>
           <h1 className="text-5xl font-extrabold tracking-tight">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">RUSH</span> <span className="text-gray-900 dark:text-white">IELTS</span>
+            <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">RUSH</span> <span className="text-gray-900 dark:text-white">IELTS</span>
           </h1>
           <div className="flex justify-center items-center gap-3 text-lg">
             {user.targetScore && (
@@ -112,15 +120,21 @@ export default function Home() {
                */}
 
               <Link
-                to="/collections"
-                className="block w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white text-lg font-bold rounded-xl text-center shadow-lg shadow-blue-500/30 transition-all active:scale-95 flex items-center justify-center gap-2"
+                to={user.lastCollectionId ? `/study?collectionId=${user.lastCollectionId}&source=all` : "/collections"}
+                className="w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 text-white text-lg font-bold rounded-xl text-center shadow-lg shadow-blue-500/30 transition-all active:scale-95 flex items-center justify-center gap-2"
               >
-                <span>🚀</span> Start / Continue Review
+                <span>🚀</span> {user.lastCollectionId ? `Continue ${lastCollectionName ? `"${lastCollectionName}"` : "Review"}` : "Start / Continue Review"}
               </Link>
 
-              <p className="text-xs text-center text-gray-400">
-                Select a collection to study
-              </p>
+              {user.lastCollectionId ? (
+                <Link to="/collections" className="text-xs text-center text-gray-400 hover:text-blue-500 underline">
+                  Switch Collection
+                </Link>
+              ) : (
+                <p className="text-xs text-center text-gray-400">
+                  Select a collection to study
+                </p>
+              )}
             </div>
           )}
 
@@ -131,7 +145,7 @@ export default function Home() {
               </h2>
               <Link
                 to="/study?source=mistakes"
-                className="block w-full py-3 px-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-semibold rounded-xl text-center hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors active:scale-95 flex items-center justify-center gap-2"
+                className="w-full py-3 px-4 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 font-semibold rounded-xl text-center hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors active:scale-95 flex items-center justify-center gap-2"
               >
                 <span>🎯</span> Review All Mistakes
               </Link>

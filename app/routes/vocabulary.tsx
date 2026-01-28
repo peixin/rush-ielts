@@ -33,6 +33,8 @@ export default function Vocabulary() {
   const [editingWord, setEditingWord] = useState<Partial<WordRecord> | null>(null);
   const [viewingWord, setViewingWord] = useState<WordRecord | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [openMenuWordId, setOpenMenuWordId] = useState<number | null>(null);
+  const [revealedWordIds, setRevealedWordIds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     setActiveTab(searchParams.get("tab") === "mistakes" ? "mistakes" : "all");
@@ -50,6 +52,10 @@ export default function Vocabulary() {
     const settings = getUserSettings();
     if (settings) {
       setShowDefinition(!!settings.showDefinition);
+      // Reset revealed words when global setting loads/changes if needed
+      // But actually we might want to keep manual overrides? 
+      // For simplicity, let's clear them when global toggles.
+      setRevealedWordIds(new Set()); 
       setShowPhonetic(!!settings.showPhonetic);
       setCurrentProgressId(settings.lastStudiedWordId);
     }
@@ -150,10 +156,20 @@ export default function Vocabulary() {
   const toggleDefinitionVisibility = () => {
     const newVal = !showDefinition;
     setShowDefinition(newVal);
+    setRevealedWordIds(new Set()); // Reset local overrides
     const settings = getUserSettings();
     if (settings) {
       saveUserSettings({ ...settings, showDefinition: newVal });
     }
+  };
+
+  const toggleItemDefinition = (id: number) => {
+      setRevealedWordIds(prev => {
+          const next = new Set(prev);
+          if (next.has(id)) next.delete(id);
+          else next.add(id);
+          return next;
+      });
   };
 
   const handleFetchApi = async () => {
@@ -191,7 +207,7 @@ export default function Vocabulary() {
   });
 
   return (
-    <div className="flex-grow font-sans pb-20">
+    <div className="grow font-sans pb-20">
 
       {/* Top Bar */}
       <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 px-4 py-3">
@@ -220,7 +236,7 @@ export default function Vocabulary() {
             <div className="flex gap-2">
 
               <Link
-                to="/import"
+                to={`/import?collectionId=${activeCollectionId}`}
                 className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white px-3 py-2 rounded-lg text-sm font-semibold transition-colors"
               >
                 Import
@@ -294,82 +310,117 @@ export default function Vocabulary() {
           </div>
         ) : (
           filteredWords.map((word) => (
-            <div key={word.word} className="mb-3">
-              <div className="bg-white dark:bg-gray-800 rounded-xl px-5 py-4 shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800 transition-all flex items-center justify-between group gap-4">
+                <div key={word.word} className="mb-3">
+                  <div className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-md transition-all group ${openMenuWordId === word.id ? "z-20 relative" : ""}`}>
+                    <div className="flex items-center justify-between p-4 pb-2">
+                        {/* Top Row: Word + Quick Actions */}
+                        <div className="flex items-center gap-2 flex-wrap flex-1 cursor-pointer" onClick={() => handleView(word)}>
+                        <span className="font-bold text-gray-900 dark:text-white text-lg truncate">{word.word}</span>
+                        {showPhonetic && word.phonetic && <span className="text-xs text-gray-500 font-mono bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">{word.phonetic}</span>}
+                        {word.mistakeCount > 0 && (
+                            <span className="text-xs font-bold text-red-500 bg-red-50 dark:bg-red-900/20 px-1.5 py-0.5 rounded">
+                            {word.mistakeCount} err
+                            </span>
+                        )}
+                        </div>
 
-                {/* Word Info - Click to View */}
-                <div
-                  className="flex-1 cursor-pointer min-w-0"
-                  onClick={() => handleView(word)}
-                >
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-gray-900 dark:text-white text-lg truncate">{word.word}</span>
-                    {showPhonetic && word.phonetic && <span className="text-xs text-gray-500 font-mono bg-gray-100 dark:bg-gray-700 px-1.5 py-0.5 rounded">{word.phonetic}</span>}
-                    {word.mistakeCount > 0 && (
-                      <span className="text-xs font-bold text-red-500 bg-red-50 dark:bg-red-900/20 px-1.5 py-0.5 rounded">
-                        {word.mistakeCount} err
-                      </span>
+                        {/* Actions Right */}
+                        <div className="flex items-center gap-1 shrink-0 relative">
+                            <button
+                                onClick={(e) => {
+                                e.stopPropagation();
+                                if (word.audio) {
+                                    let audioUrl = word.audio;
+                                    if (!audioUrl.startsWith("http")) {
+                                    audioUrl = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(audioUrl)}`;
+                                    }
+                                    audioUrl = audioUrl.replace("http://", "https://");
+                                    new Audio(audioUrl).play();
+                                }
+                                }}
+                                className="p-1.5 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                                title="Voice"
+                            >
+                            <span className="sr-only">Voice</span>
+                            🔊
+                            </button>
+                            <button
+                            onClick={(e) => { 
+                                e.stopPropagation(); 
+                                if (word.id) toggleItemDefinition(word.id); 
+                            }}
+                            className={`p-1.5 rounded-full transition-colors ${
+                                (showDefinition || (word.id && revealedWordIds.has(word.id)))
+                                ? "text-blue-600 bg-blue-50 dark:bg-blue-900/20"
+                                : "text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                            }`}
+                            title="Toggle Definition"
+                            >
+                            <span className="sr-only">Toggle Definition</span>
+                            {(showDefinition || (word.id && revealedWordIds.has(word.id))) ? "👁️" : "🙈"}
+                            </button>
+                            
+                            {/* More Menu Trigger */}
+                            <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setOpenMenuWordId(openMenuWordId === word.id ? null : word.id!);
+                            }}
+                            className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            >
+                            ⋮
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            {openMenuWordId === word.id && (
+                            <>
+                                <div className="fixed inset-0 z-10" onClick={() => setOpenMenuWordId(null)}></div>
+                                <div className="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setOpenMenuWordId(null); handleEdit(word); }}
+                                    className="w-full text-left px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2"
+                                >
+                                    ✏️ Edit
+                                </button>
+                                <div className="h-px bg-gray-100 dark:bg-gray-700"></div>
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setOpenMenuWordId(null); handleDelete(word.word); }}
+                                    className="w-full text-left px-4 py-2.5 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                                >
+                                    🗑️ Delete
+                                </button>
+                                </div>
+                            </>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Definition Row - Full Width */}
+                    {(showDefinition || (word.id && revealedWordIds.has(word.id))) && (
+                    <div
+                        className="px-4 pb-4 pt-0 text-sm text-gray-600 dark:text-gray-300 w-full cursor-pointer animate-in fade-in slide-in-from-top-1 duration-200"
+                        onClick={() => handleView(word)}
+                    >
+                        {word.definition.map((def, i) => (
+                        <div key={i} className="line-clamp-2">{def}</div>
+                        ))}
+                    </div>
                     )}
                   </div>
-                  {showDefinition && (
-                    <div className="text-xs text-gray-500 dark:text-gray-400 truncate w-full">
-                      {word.definition.join("; ")}
+
+                  {/* Progress Divider */}
+                  {word.id !== undefined && currentProgressId === word.id && (
+                    <div className="relative py-4 text-center">
+                    <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                        <div className="w-full border-t-2 border-blue-500 border-dashed opacity-50"></div>
+                    </div>
+                    <div className="relative inline-block px-2 bg-gray-50 dark:bg-gray-900">
+                        <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest border border-blue-200 dark:border-blue-800 rounded-full px-3 py-1 bg-blue-50 dark:bg-blue-900/30">
+                        Current Progress
+                        </span>
+                    </div>
                     </div>
                   )}
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-1 shrink-0">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      if (word.audio) {
-                        let audioUrl = word.audio;
-                        if (!audioUrl.startsWith("http")) {
-                          audioUrl = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(audioUrl)}`;
-                        }
-                        audioUrl = audioUrl.replace("http://", "https://");
-                        new Audio(audioUrl).play();
-                      }
-                    }}
-                    className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    title="Play Audio"
-                  >
-                    <span className="sr-only">Play</span>
-                    🔊
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleEdit(word); }}
-                    className="p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    title="Edit"
-                  >
-                    <span className="sr-only">Edit</span>
-                    ✏️
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleDelete(word.word); }}
-                    className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    title="Delete"
-                  >
-                    <span className="sr-only">Delete</span>
-                    🗑️
-                  </button>
-                </div>
-              </div>
-
-              {/* Progress Divider */}
-              {word.id !== undefined && currentProgressId === word.id && (
-                <div className="relative py-4 text-center">
-                  <div className="absolute inset-0 flex items-center" aria-hidden="true">
-                    <div className="w-full border-t-2 border-blue-500 border-dashed opacity-50"></div>
-                  </div>
-                  <div className="relative inline-block px-2 bg-gray-50 dark:bg-gray-900">
-                    <span className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest border border-blue-200 dark:border-blue-800 rounded-full px-3 py-1 bg-blue-50 dark:bg-blue-900/30">
-                      Current Progress
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
           ))
         )}
@@ -505,23 +556,23 @@ export default function Vocabulary() {
                     <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Examples</h3>
                     <div className="space-y-3">
                       {viewingWord.examples.map((ex, i) => (
-                        <div key={i} className="bg-gray-50 dark:bg-gray-900 p-3 rounded-lg flex gap-3">
-                          {ex.audio && (
-                            <button
-                              onClick={() => {
-                                let audioUrl = ex.audio;
-                                if (!audioUrl.startsWith("http")) {
-                                  audioUrl = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(audioUrl)}`;
-                                }
-                                audioUrl = audioUrl.replace("http://", "https://");
-                                new Audio(audioUrl).play();
-                              }}
-                              className="mt-1 flex-shrink-0 text-blue-500 hover:text-blue-600 bg-white dark:bg-gray-800 w-8 h-8 flex items-center justify-center rounded-full shadow-sm"
-                              title="Play Example"
-                            >
-                              🔊
-                            </button>
-                          )}
+                          <div key={i} className="bg-gray-50 dark:bg-gray-900 p-3 rounded-lg flex gap-3">
+                            {ex.audio && (
+                              <button
+                                onClick={() => {
+                                  let audioUrl = ex.audio;
+                                  if (!audioUrl.startsWith("http")) {
+                                    audioUrl = `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(audioUrl)}`;
+                                  }
+                                  audioUrl = audioUrl.replace("http://", "https://");
+                                  new Audio(audioUrl).play();
+                                }}
+                                className="mt-1 shrink-0 text-blue-500 hover:text-blue-600 bg-white dark:bg-gray-800 w-8 h-8 flex items-center justify-center rounded-full shadow-sm"
+                                title="Play Example"
+                              >
+                                🔊
+                              </button>
+                            )}
                           <div>
                             <p className="text-gray-900 dark:text-white font-medium">{ex.en}</p>
                             <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{ex.cn}</p>

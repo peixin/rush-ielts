@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useSearchParams } from "react-router";
 import { addWordToVocab, getCollections, type Collection } from "~/utils/db";
+import { getUserSettings } from "~/utils/user";
 
 export default function Import() {
   const [searchParams] = useSearchParams();
@@ -20,15 +21,21 @@ export default function Import() {
       const cols = await getCollections();
       setCollections(cols);
       if (cols.length > 0) {
-        // Priority: URL Param -> First Collection
+        // Priority: URL Param -> User Last Collection -> First Collection
         const paramId = searchParams.get("collectionId");
+        const settings = getUserSettings();
+        
+        let targetId = cols[0].id!;
+
         if (paramId) {
-          const found = cols.find(c => c.id === parseInt(paramId));
-          if (found) setSelectedCollectionId(found.id!);
-          else setSelectedCollectionId(cols[0].id!);
-        } else {
-          setSelectedCollectionId(cols[0].id!);
+           targetId = parseInt(paramId);
+        } else if (settings?.lastCollectionId) {
+           targetId = settings.lastCollectionId;
         }
+
+        const found = cols.find(c => c.id === targetId);
+        if (found) setSelectedCollectionId(targetId);
+        else setSelectedCollectionId(cols[0].id!);
       }
     }
     loadCols();
@@ -122,7 +129,7 @@ export default function Import() {
   };
 
   return (
-    <div className="flex-grow flex flex-col p-6 font-sans">
+    <div className="grow flex flex-col p-6 font-sans">
       <div className="max-w-2xl mx-auto w-full space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">

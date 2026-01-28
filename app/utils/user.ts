@@ -8,6 +8,7 @@ export interface UserSettings {
   reviewMode?: 'recognition' | 'spelling'; // New field
   // Progress
   lastStudiedWordId?: number;
+  lastCollectionId?: number;
 }
 
 const USER_STORAGE_KEY = 'rush_user_settings';

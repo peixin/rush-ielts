@@ -44,7 +44,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="flex-grow flex flex-col p-6 font-sans">
+    <div className="grow flex flex-col p-6 font-sans">
       <div className="max-w-md mx-auto w-full space-y-8">
         <div className="flex items-center gap-4">
           <Link to="/" className="text-gray-500 hover:text-gray-900 dark:hover:text-white">← Back</Link>
@@ -196,7 +196,7 @@ export default function Settings() {
           </div>
           <div className="p-4 space-y-4">
             <Link
-              to="/import"
+              to={formData.lastCollectionId ? `/import?collectionId=${formData.lastCollectionId}` : "/import"}
               className="block w-full py-3 px-4 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 font-semibold rounded-xl text-center hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
             >
               Import Words

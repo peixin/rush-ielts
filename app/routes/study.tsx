@@ -55,6 +55,11 @@ export default function Study() {
       setMode(activeMode);
 
 
+      // Save last collection if present
+      if (collectionId && settings) {
+        saveUserSettings({ ...settings, lastCollectionId: collectionId });
+      }
+
       let words: WordRecord[] = [];
 
       if (source === "mistakes") {

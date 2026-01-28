@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import {
     getCollections,
     addCollection,
+    updateCollection,
     deleteCollection,
     getAllWords,
     getMistakeWords,
@@ -25,7 +26,8 @@ export default function Collections() {
     const [collections, setCollections] = useState<CollectionWithStats[]>([]);
     const [loading, setLoading] = useState(true);
     const [isCreating, setIsCreating] = useState(false);
-    const [newCollectionName, setNewCollectionName] = useState("");
+    const [editingId, setEditingId] = useState<number | null>(null);
+    const [collectionNameInput, setCollectionNameInput] = useState("");
 
     const loadData = async () => {
         setLoading(true);
@@ -64,12 +66,27 @@ export default function Collections() {
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!newCollectionName.trim()) return;
+        if (!collectionNameInput.trim()) return;
 
-        await addCollection(newCollectionName.trim());
-        setNewCollectionName("");
+        await addCollection(collectionNameInput.trim());
+        setCollectionNameInput("");
         setIsCreating(false);
         loadData();
+    };
+
+    const handleUpdate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!collectionNameInput.trim() || editingId === null) return;
+
+        await updateCollection(editingId, collectionNameInput.trim());
+        setCollectionNameInput("");
+        setEditingId(null);
+        loadData();
+    };
+
+    const openEdit = (id: number, currentName: string) => {
+        setEditingId(id);
+        setCollectionNameInput(currentName);
     };
 
     const handleDelete = async (id: number, name: string) => {
@@ -79,7 +96,7 @@ export default function Collections() {
     };
 
     return (
-        <div className="flex-grow flex flex-col p-6 font-sans">
+        <div className="grow flex flex-col p-6 font-sans">
             <div className="max-w-2xl mx-auto w-full space-y-6">
 
                 {/* Header */}
@@ -89,41 +106,43 @@ export default function Collections() {
                         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Your Collections</h1>
                     </div>
                     <button
-                        onClick={() => setIsCreating(true)}
+                        onClick={() => { setIsCreating(true); setCollectionNameInput(""); }}
                         className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm transition-colors"
                     >
                         + New
                     </button>
                 </div>
 
-                {/* Create Modal/Inline Form */}
-                {isCreating && (
+                {/* Create/Edit Modal */}
+                {(isCreating || editingId !== null) && (
                     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                         <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md p-6 shadow-xl animate-in zoom-in-95">
-                            <h2 className="text-lg font-bold mb-4 dark:text-white">New Collection</h2>
-                            <form onSubmit={handleCreate}>
+                            <h2 className="text-lg font-bold mb-4 dark:text-white">
+                                {isCreating ? "New Collection" : "Rename Collection"}
+                            </h2>
+                            <form onSubmit={isCreating ? handleCreate : handleUpdate}>
                                 <input
                                     autoFocus
                                     type="text"
-                                    placeholder="Collection Name (e.g. IELTS Unit 1)"
+                                    placeholder="Collection Name"
                                     className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 dark:text-white mb-4 outline-none focus:ring-2 focus:ring-blue-500"
-                                    value={newCollectionName}
-                                    onChange={e => setNewCollectionName(e.target.value)}
+                                    value={collectionNameInput}
+                                    onChange={e => setCollectionNameInput(e.target.value)}
                                 />
                                 <div className="flex justify-end gap-3">
                                     <button
                                         type="button"
-                                        onClick={() => setIsCreating(false)}
+                                        onClick={() => { setIsCreating(false); setEditingId(null); setCollectionNameInput(""); }}
                                         className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={!newCollectionName.trim()}
+                                        disabled={!collectionNameInput.trim()}
                                         className="px-4 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 disabled:opacity-50"
                                     >
-                                        Create
+                                        {isCreating ? "Create" : "Save"}
                                     </button>
                                 </div>
                             </form>
@@ -139,7 +158,7 @@ export default function Collections() {
                         <div className="text-center py-10 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700">
                             <p className="text-gray-500 mb-4">No collections yet.</p>
                             <button
-                                onClick={() => setIsCreating(true)}
+                                onClick={() => { setIsCreating(true); setCollectionNameInput(""); }}
                                 className="text-blue-600 font-bold hover:underline"
                             >
                                 Create your first collection
@@ -158,7 +177,15 @@ export default function Collections() {
                                         </p>
                                     </Link>
 
-                                    <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            onClick={() => openEdit(col.id!, col.name)}
+                                            className="p-1.5 text-gray-300 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                                            title="Rename Collection"
+                                        >
+                                            <span className="sr-only">Rename</span>
+                                            ✏️
+                                        </button>
                                         <button
                                             onClick={() => handleDelete(col.id!, col.name)}
                                             className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
