@@ -294,3 +294,99 @@ export async function clearDatabase() {
     transaction.onerror = () => reject(transaction.error);
   });
 }
+
+// --- Import / Export Feature ---
+
+export interface BackupData {
+  version: 1;
+  timestamp: number;
+  collections: Collection[];
+  vocabulary: WordRecord[];
+}
+
+export async function exportDatabase(): Promise<BackupData> {
+  const collections = await getCollections();
+  const vocabulary = await getAllWords();
+  
+  return {
+    version: 1,
+    timestamp: Date.now(),
+    collections,
+    vocabulary
+  };
+}
+
+
+
+// Re-write to use 2-phase approach for cleaner async code
+export async function importDatabaseSmart(data: BackupData): Promise<void> {
+    // Phase 1: Ensure Collectons Exist and Build Map
+    const db = await openDB();
+    
+    // We need to read all existing first
+    const existingCols = await getCollections();
+    const idMap = new Map<number, number>();
+
+    // We used a loop with await here, so we need to be careful about transaction scope.
+    // It is safer to do one-off Adds for missing collections.
+    for (const backupCol of data.collections) {
+        if (!backupCol.id) continue;
+        const match = existingCols.find(c => c.name === backupCol.name);
+        if (match) {
+            idMap.set(backupCol.id, match.id!);
+        } else {
+            // Create it
+            const newId = await addCollection(backupCol.name);
+            idMap.set(backupCol.id, newId);
+        }
+    }
+
+    // Phase 2: Insert Vocabulary
+    // Now we can use a single robust transaction for words
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([VOCAB_STORE], 'readwrite');
+        const vocabStore = transaction.objectStore(VOCAB_STORE);
+        const index = vocabStore.index('word_collection');
+
+        let handledCount = 0;
+        const total = data.vocabulary.length;
+
+        if (total === 0) {
+            resolve();
+            return;
+        }
+
+        data.vocabulary.forEach(word => {
+            const originalColId = word.collectionId || 1;
+            const targetColId = idMap.get(originalColId) || 1; // Fallback to default if somehow missing
+
+            // Check existence
+            const checkReq = index.get([word.word, targetColId]);
+            checkReq.onsuccess = () => {
+                if (!checkReq.result) {
+                    // Does not exist, ADD
+                    // Strip old ID, assign new Collection ID
+                    const { id, ...rest } = word;
+                    const newRecord = { ...rest, collectionId: targetColId };
+                    vocabStore.add(newRecord);
+                }
+                // Else: exists, SKIP (Merge strategy: keep existing)
+                
+                handledCount++;
+                if (handledCount === total) resolve();
+            };
+            checkReq.onerror = () => {
+                 // Ignore error, continue
+                 handledCount++;
+                 if (handledCount === total) resolve();
+            }
+        });
+
+        transaction.onerror = (e) => reject(transaction.error);
+    });
+}
+
+// Redirect original function to smart one
+export async function importDatabase(data: BackupData): Promise<void> {
+    return importDatabaseSmart(data);
+}

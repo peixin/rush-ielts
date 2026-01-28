@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router";
-import { useEffect, useState } from "react";
-import { clearDatabase } from "~/utils/db";
+import { useEffect, useState, useRef } from "react";
+import { clearDatabase, exportDatabase, importDatabase, type BackupData } from "~/utils/db";
 import { getUserSettings, saveUserSettings, type UserSettings } from "~/utils/user";
 
 export default function Settings() {
@@ -41,6 +41,60 @@ export default function Settings() {
       alert("All data has been cleared.");
       window.location.href = "/";
     }
+  };
+
+  const handleExport = async () => {
+    try {
+      const data = await exportDatabase();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `rush-ielts-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to export data.");
+    }
+  };
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!confirm("WARNING: Restoring a backup will MERGE all current data. This cannot be undone. Are you sure?")) {
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = async (ev) => {
+      try {
+        const json = ev.target?.result as string;
+        const data = JSON.parse(json) as BackupData;
+        
+        if (!data.collections || !data.vocabulary) {
+          throw new Error("Invalid backup format");
+        }
+
+        await importDatabase(data);
+        alert("Database restored successfully!");
+        window.location.reload();
+      } catch (err) {
+        console.error(err);
+        alert("Failed to restore backup. Invalid file format.");
+      }
+    };
+    reader.readAsText(file);
   };
 
   return (
@@ -201,6 +255,29 @@ export default function Settings() {
             >
               Import Words
             </Link>
+
+            <button
+              onClick={handleExport}
+              className="w-full py-3 px-4 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 font-semibold rounded-xl text-center hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
+            >
+              Export Backup (JSON)
+            </button>
+
+            <button
+              onClick={handleImportClick}
+              className="w-full py-3 px-4 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300 font-semibold rounded-xl text-center hover:bg-yellow-100 dark:hover:bg-yellow-900/40 transition-colors"
+            >
+              Restore Backup (JSON)
+            </button>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleImportFile} 
+              className="hidden" 
+              accept=".json" 
+            />
+
+            <div className="border-t border-gray-100 dark:border-gray-700 my-2"></div>
 
             <button
               onClick={handleResetData}
