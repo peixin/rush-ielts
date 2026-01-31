@@ -10,6 +10,7 @@ import {
   type Collection
 } from "~/utils/db";
 import { getUserSettings, saveUserSettings } from "~/utils/user";
+import { AudioPlayer } from "~/components/AudioPlayer";
 
 type Tab = "all" | "mistakes";
 
@@ -36,6 +37,10 @@ export default function Vocabulary() {
   const [isLoading, setIsLoading] = useState(false);
   const [openMenuWordId, setOpenMenuWordId] = useState<number | null>(null);
   const [revealedWordIds, setRevealedWordIds] = useState<Set<number>>(new Set());
+
+  // Audio Player State
+  const [isPlayerOpen, setIsPlayerOpen] = useState(false);
+  const [playerPlaylist, setPlayerPlaylist] = useState<WordRecord[]>([]);
 
   useEffect(() => {
     setActiveTab(searchParams.get("tab") === "mistakes" ? "mistakes" : "all");
@@ -212,6 +217,13 @@ export default function Vocabulary() {
     return matchesTab && matchesSearch;
   });
 
+  const handlePlayAll = () => {
+      // Filter words that have content to play (most have fallback, so just use list)
+      if (filteredWords.length === 0) return;
+      setPlayerPlaylist(filteredWords);
+      setIsPlayerOpen(true);
+  };
+
   return (
     <div className="grow font-sans pb-20">
 
@@ -288,6 +300,13 @@ export default function Vocabulary() {
             {/* Start Review Button for current list */}
             {/* Actions: Hide Defs + Start Review */}
             <div className="flex items-center gap-4 pb-3 mb-0.5">
+              <button
+                onClick={handlePlayAll}
+                className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors flex items-center gap-1"
+                title="Play All in List"
+              >
+                  <span>🎧</span> Play All
+              </button>
               <button
                 onClick={toggleDefinitionVisibility}
                 className="text-xs font-bold text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
@@ -630,6 +649,15 @@ export default function Vocabulary() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Audio Player */}
+      {isPlayerOpen && (
+          <AudioPlayer 
+              playlist={playerPlaylist} 
+              initialIndex={0} 
+              onClose={() => setIsPlayerOpen(false)} 
+          />
       )}
     </div>
   );
